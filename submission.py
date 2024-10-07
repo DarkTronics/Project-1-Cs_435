@@ -160,6 +160,7 @@ def process_adult(file):
     noOutlierAdult = originalAdultData[~originalAdultData['Feature 2'].str.contains(r'\?', na=False)]
     noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 14'].str.contains(r'\?', na=False)]
     noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 7'].str.contains(r'\?', na=False)]
+    noOutlierAdult.drop(noOutlierAdult.tail(1).index,inplace=True)
     
     noOutlierAdult.to_csv('adult.csv', index=False)
     print(noOutlierAdult.describe())
