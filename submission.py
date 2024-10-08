@@ -24,7 +24,7 @@ def process_emg(file):
 
     with open("emg.csv", mode='w', newline='') as file: # Write the format change of emg.txt to emg.csv
         writer = csv.writer(file)
-        writer.writerow(['Label', 'Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8'])
+        writer.writerow(['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8', 'Feature 9'])
         writer.writerows(processed_rows)
 
     originalEmgData = pd.read_csv("emg.csv")
@@ -62,8 +62,11 @@ def process_emg(file):
     # plt.show()
 
     #Binning
-    for column in noOutlierEmg.columns:
-        noOutlierEmg[column] = noOutlierEmg[column].sort_values().values
+    # for column in noOutlierEmg.columns:
+    #     noOutlierEmg[column] = noOutlierEmg[column].sort_values().values
+
+    # noOutlierEmg['Feature 1'] = noOutlierEmg['Feature 1'].sort_values().values
+    # noOutlierEmg = noOutlierEmg.sort_values(by=['Feature 1'], ascending=True)
     noOutlierEmg.to_csv('emg.csv', index=False)
 
     # originalAustralianData['Feature 1 bin'] = pd.qcut(originalAustralianData['Feature 1'], q=200)
@@ -87,7 +90,7 @@ def process_australian(file):
 
     with open("australian.csv", mode='w', newline='') as file: # Write the format change of emg.txt to emg.csv
         writer = csv.writer(file)
-        writer.writerow(['Label', 'Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8', 'Feature 9', 'Feature 10', 'Feature 11', 'Feature 12', 'Feature 13', 'Feature 14'])
+        writer.writerow(['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8', 'Feature 9', 'Feature 10', 'Feature 11', 'Feature 12', 'Feature 13', 'Feature 14', 'Feature 15'])
         writer.writerows(processed_rows)
 
     originalAustralianData = pd.read_csv("australian.csv")
@@ -124,10 +127,9 @@ def process_australian(file):
     #     i+=1
     # plt.show()
 
-    #Binning
-    for column in noOutlierAustralian.columns:
-        noOutlierAustralian[column] = noOutlierAustralian[column].sort_values().values
-    noOutlierAustralian = noOutlierAustralian.drop_duplicates()
+    # #Binning
+    # for column in noOutlierAustralian.columns:
+    #     noOutlierAustralian[column] = noOutlierAustralian[column].sort_values().values
     noOutlierAustralian.to_csv('australian.csv', index=False)
 
     # originalAustralianData['Feature 1 bin'] = pd.qcut(originalAustralianData['Feature 1'], q=200)
@@ -150,14 +152,19 @@ def process_adult(file):
             features[i] = str(part)
             i+=1
         processed_rows.append([label] + features)   # Append label to feature
-
     with open("adult.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8', 'Feature 9', 'Feature 10', 'Feature 11', 'Feature 12', 'Feature 13', 'Feature 14', 'Features 15'])
         writer.writerows(processed_rows)
     
     originalAdultData = pd.read_csv("adult.csv")
+    #Dealing with missing values
     noOutlierAdult = originalAdultData[~originalAdultData['Feature 2'].str.contains(r'\?', na=False)]
+    medianHoursWorked = noOutlierAdult['Feature 13'].median()
+    print(medianHoursWorked)
+    for index, row in noOutlierAdult.iterrows(): # replace the missing hour worked values with the median
+        if row['Feature 13'] == ' ?':
+            noOutlierAdult.at[index, 'Feature 13'] = medianHoursWorked
     noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 14'].str.contains(r'\?', na=False)]
     noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 7'].str.contains(r'\?', na=False)]
     noOutlierAdult.drop(noOutlierAdult.tail(1).index,inplace=True)
@@ -167,6 +174,6 @@ def process_adult(file):
     print(noOutlierAdult)
 
 if __name__=="__main__":
-    # process_emg("emg.txt")
-    # process_australian('australian.txt')
+    process_emg("emg.txt")
+    process_australian('australian.txt')
     process_adult("adult.data")
