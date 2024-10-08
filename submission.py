@@ -143,37 +143,54 @@ def process_adult(file):
     with open(data_file_name, 'r') as file:
         lines = file.readlines()
 
+    # Parse original adult
     for line in lines:
         parts = line.strip().split(',')
-        label = parts[0]
-        features = [0] * 14  # Assuming we have 14 features (1 to 14)
+        features = [0] * 15  # Assuming we have 14 features (1 to 14)
         i = 0
-        for part in parts[1:]:
-            features[i] = str(part)
+        for part in parts[0:]:
+            features[i] = part
             i+=1
-        processed_rows.append([label] + features)   # Append label to feature
+        processed_rows.append(features)   # Append label to feature
     with open("adult.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5', 'Feature 6', 'Feature 7', 'Feature 8', 'Feature 9', 'Feature 10', 'Feature 11', 'Feature 12', 'Feature 13', 'Feature 14', 'Features 15'])
+        writer.writerow(['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 
+                         'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'income'])
         writer.writerows(processed_rows)
-    
-    originalAdultData = pd.read_csv("adult.csv")
+
     #Dealing with missing values
-    noOutlierAdult = originalAdultData[~originalAdultData['Feature 2'].str.contains(r'\?', na=False)]
-    medianHoursWorked = noOutlierAdult['Feature 13'].median()
-    print(medianHoursWorked)
+    originalAdultData = pd.read_csv("adult.csv")
+    noOutlierAdult = originalAdultData[~originalAdultData['workclass'].str.contains(r'\?', na=False)]
+    medianHoursWorked = noOutlierAdult['hours-per-week'].median()
     for index, row in noOutlierAdult.iterrows(): # replace the missing hour worked values with the median
-        if row['Feature 13'] == ' ?':
-            noOutlierAdult.at[index, 'Feature 13'] = medianHoursWorked
-    noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 14'].str.contains(r'\?', na=False)]
-    noOutlierAdult = noOutlierAdult[~noOutlierAdult['Feature 7'].str.contains(r'\?', na=False)]
+        if row['hours-per-week'] == ' ?':
+            noOutlierAdult.at[index, 'hours-per-week'] = medianHoursWorked
+    noOutlierAdult = noOutlierAdult[~noOutlierAdult['native-country'].str.contains(r'\?', na=False)]
+    noOutlierAdult = noOutlierAdult[~noOutlierAdult['occupation'].str.contains(r'\?', na=False)]
     noOutlierAdult.drop(noOutlierAdult.tail(1).index,inplace=True)
+
+    noOutlierAdult['workclass'] = noOutlierAdult['workclass'].replace({' Private': 0, ' Self-emp-not-inc': 1, ' Self-emp-inc': 2, ' Federal-gov': 3, ' Local-gov': 4, ' State-gov': 5, ' Without-pay': 6, ' Never-worked': 7})
+    noOutlierAdult['education'] = noOutlierAdult['education'].replace({' Bachelors': 0, ' Some-college': 1, ' Self-emp-inc': 2, ' 11th': 3, ' HS-grad': 4, ' Prof-school': 5, 
+                                                                       ' Assoc-acdm': 6, ' Assoc-voc': 7, ' 9th': 8, ' 7th-8th': 9, ' 12th':10, ' Masters':11, ' 1st-4th':12, ' 10th':13, ' Doctorate':14, ' 5th-6th':15, ' Preschool':16})
+    noOutlierAdult['marital-status'] = noOutlierAdult['marital-status'].replace({' Married-civ-spouse':0, ' Divorced':1, ' Never-married':2, ' Separated':3, ' Widowed': 4, ' Married-spouse-absent':5, ' Married-AF-spouse':6})
+    noOutlierAdult['occupation'] = noOutlierAdult['occupation'].replace({' Tech-support':0, ' Craft-repair':1, ' Other-service':2, ' Sales':3, ' Exec-managerial':4, ' Prof-specialty':5, 
+                                                                         ' Handlers-cleaners':6, ' Machine-op-inspct':7, ' Adm-clerical':8, ' Farming-fishing':9, ' Transport-moving':10, ' Priv-house-serv':11, ' Protective-serv':12, ' Armed-Forces':13})
+    noOutlierAdult['relationship'] = noOutlierAdult['relationship'].replace({' Wife':0, ' Own-child':1, ' Husband':2, ' Not-in-family':3, ' Other-relative':4, ' Unmarried':5})
+    noOutlierAdult['race'] = noOutlierAdult['race'].replace({' White': 0, ' Asian-Pac-Islander':1, ' Amer-Indian-Eskimo':2, ' Other':3, ' Black':4})
+    noOutlierAdult['sex'] = noOutlierAdult['sex'].replace({' Female': 0, ' Male': 1})
+    noOutlierAdult['native-country'] = noOutlierAdult['native-country'].replace({' United-States':0, ' Cambodia':1, ' England':2, ' Puerto-Rico':3, ' Canada':4, ' Germany':5, ' Outlying-US(Guam-USVI-etc)':6, ' India':7, 
+                                                                                 ' Japan':8, ' Greece':9, ' South':10, ' China':11, ' Cuba':12, ' Iran':13, ' Honduras':14, ' Philippines':15, ' Italy':16, ' Poland':17, 
+                                                                                 ' Jamaica':18, ' Vietnam':19, ' Mexico':20, ' Portugal':21, ' Ireland':22, ' France':23, ' Dominican-Republic':24, ' Laos':25, 
+                                                                                 ' Ecuador':26, ' Taiwan':27, ' Haiti':28, ' Columbia':29, ' Hungary':30, ' Guatemala':31, ' Nicaragua':32, ' Scotland':33, ' Thailand':34, 
+                                                                                 ' Yugoslavia':35, ' El-Salvador':36, ' Trinadad&Tobago':37, ' Peru':38, ' Hong':39, ' Holand-Netherlands':40})
+    noOutlierAdult['income'] = noOutlierAdult['income'].replace({' <=50K':0, ' >50K':1})
     
     noOutlierAdult.to_csv('adult.csv', index=False)
     print(noOutlierAdult.describe())
     print(noOutlierAdult)
 
 if __name__=="__main__":
-    process_emg("emg.txt")
-    process_australian('australian.txt')
+    pd.set_option('future.no_silent_downcasting', True)
+    # process_emg("emg.txt")
+    # process_australian('australian.txt')
     process_adult("adult.data")
