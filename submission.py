@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 import seaborn as sns
 from scipy.fftpack import rfft  
 import matplotlib.pyplot as plt
+import plotly.express as px
 
 def dft(file, num):
     data_file_name = file
@@ -35,18 +36,17 @@ def pca(file, num):
     pca.fit(scaled_data)
     data_pca = pca.transform(scaled_data)
     data_pca = pd.DataFrame(data_pca,columns=pc)
-    print(data_pca)
+    components = pca.fit_transform(originalData)
+    print(components)
     sns.heatmap(data_pca.corr())
     plt.show()
 
-    if num >= 2:
-        plt.figure(figsize=(10, 6))
-        sns.scatterplot(x=data_pca['PC1'], y=data_pca['PC2'])
-        plt.title('Scatter Plot of First Two Principal Components')
-        plt.xlabel('PC1')
-        plt.ylabel('PC2')
-        plt.grid()
-        plt.show()
+    if data_file_name == 'adult.csv':
+        fig = px.scatter(components, x=0, y=1, color=originalData['income'])
+        fig.show()
+    else:
+        fig = px.scatter(components, x=0, y=1, color=originalData['Feature 1'])
+        fig.show()
 
 def process_emg(file, numd):
     print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
@@ -198,6 +198,6 @@ def process_adult(file, numd):
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    process_emg("emg.txt", 3)
-    process_australian('australian.txt', 3)
+    # process_emg("emg.txt", 3)
+    # process_australian('australian.txt', 3)
     process_adult("adult.data", 3)
