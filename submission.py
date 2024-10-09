@@ -1,13 +1,10 @@
 import csv
-import string
 import pandas as pd
-import scipy
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler  # to standardize the features
 from sklearn.decomposition import PCA
 import seaborn as sns
-from scipy.fftpack import rfft  
+from scipy.fftpack import fft  
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -15,8 +12,12 @@ def dft(file, num):
     data_file_name = file
     originalData = pd.read_csv(file)
     n_dimensions = num
-    data_dft = rfft(originalData,n=n_dimensions)
+    data_dft = fft(originalData,n=n_dimensions)
     print(data_dft)
+    with open('test.txt', 'w') as file:
+        writer = csv.writer(file)
+        writer.writerows(data_dft)
+
 
 
 def pca(file, num):
@@ -33,21 +34,19 @@ def pca(file, num):
     pca = PCA(n_components = num)
     pca.fit(scaled_data)
     data_pca = pca.fit_transform(scaled_data)
+    if data_file_name == 'adult.csv':
+        fig = px.scatter(data_pca, x=0, y=1, color=originalData['income'])
+        fig.show()
+    else:
+        fig = px.scatter(data_pca, x=0, y=1, color=originalData['Feature 1'])
+        fig.show()
     data_pca = pd.DataFrame(data_pca,columns=pc)
-    components = pca.fit_transform(scaled_data)
     print(data_pca)
 
     sns.heatmap(scaled_data.corr())
     plt.show()
     sns.heatmap(data_pca.corr())
     plt.show()
-
-    if data_file_name == 'adult.csv':
-        fig = px.scatter(components, x=0, y=1, color=originalData['income'])
-        fig.show()
-    else:
-        fig = px.scatter(components, x=0, y=1, color=originalData['Feature 1'])
-        fig.show()
 
 def process_emg(file, numd):
     print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
@@ -199,6 +198,6 @@ def process_adult(file, numd):
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    process_emg("emg.txt", 3)
+    process_emg("emg.txt", 7)
     # process_australian('australian.txt', 3)
     # process_adult("adult.data", 2)
