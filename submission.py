@@ -30,14 +30,15 @@ def pca(file, num):
 
     scalar = StandardScaler() 
     scaled_data = pd.DataFrame(scalar.fit_transform(originalData)) #scaling the data
-    sns.heatmap(scaled_data.corr())
-    plt.show()
     pca = PCA(n_components = num)
     pca.fit(scaled_data)
-    data_pca = pca.transform(scaled_data)
+    data_pca = pca.fit_transform(scaled_data)
     data_pca = pd.DataFrame(data_pca,columns=pc)
-    components = pca.fit_transform(originalData)
-    print(components)
+    components = pca.fit_transform(scaled_data)
+    print(data_pca)
+
+    sns.heatmap(scaled_data.corr())
+    plt.show()
     sns.heatmap(data_pca.corr())
     plt.show()
 
@@ -198,6 +199,6 @@ def process_adult(file, numd):
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    # process_emg("emg.txt", 3)
+    process_emg("emg.txt", 3)
     # process_australian('australian.txt', 3)
-    process_adult("adult.data", 3)
+    # process_adult("adult.data", 2)
