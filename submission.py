@@ -4,10 +4,52 @@ import pandas as pd
 import scipy
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler  # to standardize the features
+from sklearn.decomposition import PCA
 import seaborn as sns
+from scipy.fftpack import rfft  
 import matplotlib.pyplot as plt
 
-def process_emg(file):
+def dft(file, num):
+    data_file_name = file
+    originalData = pd.read_csv(file)
+    n_dimensions = num
+    data_dft = rfft(originalData,n=n_dimensions)
+    print(data_dft)
+
+
+def pca(file, num):
+    data_file_name = file
+    originalData = pd.read_csv(file)
+
+    pcnum = num
+    pc = []
+    for i in range(num):
+        pc.append('PC' + str(i+1))
+
+    scalar = StandardScaler() 
+    scaled_data = pd.DataFrame(scalar.fit_transform(originalData)) #scaling the data
+    sns.heatmap(scaled_data.corr())
+    plt.show()
+    pca = PCA(n_components = num)
+    pca.fit(scaled_data)
+    data_pca = pca.transform(scaled_data)
+    data_pca = pd.DataFrame(data_pca,columns=pc)
+    print(data_pca)
+    sns.heatmap(data_pca.corr())
+    plt.show()
+
+    if num >= 2:
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x=data_pca['PC1'], y=data_pca['PC2'])
+        plt.title('Scatter Plot of First Two Principal Components')
+        plt.xlabel('PC1')
+        plt.ylabel('PC2')
+        plt.grid()
+        plt.show()
+
+def process_emg(file, numd):
+    print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
     data_file_name = file
     processed_rows = []
     with open(data_file_name, 'r') as file:
@@ -44,36 +86,16 @@ def process_emg(file):
             upper_bound = q3 + (1.5 * iqr)
             noOutlierEmg = noOutlierEmg[(noOutlierEmg['Feature ' + str(i)] >= lower_bound) & (noOutlierEmg['Feature ' + str(i)] <= upper_bound)]
 
-    print(noOutlierEmg.describe())
-    noOutlierEmg.to_csv("emg.csv", index=False)
-        
-    # fig, axs = plt.subplots(9,1,dpi=95, figsize=(7,17))
-    # i = 0
-    # for col in originalAustralianData.columns:
-    #     axs[i].boxplot(originalAustralianData[col], vert=False)
-    #     axs[i].set_ylabel(col)
-    #     i+=1
-    # fig, axs = plt.subplots(9,1,dpi=95, figsize=(7,17))
-    # i = 0
-    # for col in originalEmgData.columns:
-    #     axs[i].boxplot(originalEmgData[col], vert=False)
-    #     axs[i].set_ylabel(col)
-    #     i+=1
-    # plt.show()
+    noOutlierEmg = noOutlierEmg.drop_duplicates()       
 
-    #Binning
-    # for column in noOutlierEmg.columns:
-    #     noOutlierEmg[column] = noOutlierEmg[column].sort_values().values
-
-    # noOutlierEmg['Feature 1'] = noOutlierEmg['Feature 1'].sort_values().values
-    # noOutlierEmg = noOutlierEmg.sort_values(by=['Feature 1'], ascending=True)
     noOutlierEmg.to_csv('emg.csv', index=False)
-
-    # originalAustralianData['Feature 1 bin'] = pd.qcut(originalAustralianData['Feature 1'], q=200)
-    # originalAustralianData.to_csv('emg.csv', index=False)
+    print(noOutlierEmg.describe())
     print(noOutlierEmg)
+    pca('emg.csv', numd)
+    dft('emg.csv', numd)
 
-def process_australian(file):
+def process_australian(file, numd):
+    print("------------------------------------------------------------------------Processing Australian----------------------------------------------------------")
     data_file_name = file
     processed_rows = []
     with open(data_file_name, 'r') as file:
@@ -110,33 +132,15 @@ def process_australian(file):
             upper_bound = q3 + (1.5 * iqr)
             noOutlierAustralian = noOutlierAustralian[(noOutlierAustralian['Feature ' + str(i)] >= lower_bound) & (noOutlierAustralian['Feature ' + str(i)] <= upper_bound)]
 
-    print(noOutlierAustralian.describe())
+    noOutlierAustralian = noOutlierAustralian.drop_duplicates()       
     noOutlierAustralian.to_csv("australian.csv", index=False)
-        
-    # fig, axs = plt.subplots(15,1,dpi=95, figsize=(7,17))
-    # i = 0
-    # for col in originalAustralianData.columns:
-    #     axs[i].boxplot(originalAustralianData[col], vert=False)
-    #     axs[i].set_ylabel(col)
-    #     i+=1
-    # fig, axs = plt.subplots(15,1,dpi=95, figsize=(7,17))
-    # i = 0
-    # for col in noOutlierAustralian.columns:
-    #     axs[i].boxplot(noOutlierAustralian[col], vert=False)
-    #     axs[i].set_ylabel(col)
-    #     i+=1
-    # plt.show()
 
-    # #Binning
-    # for column in noOutlierAustralian.columns:
-    #     noOutlierAustralian[column] = noOutlierAustralian[column].sort_values().values
-    noOutlierAustralian.to_csv('australian.csv', index=False)
-
-    # originalAustralianData['Feature 1 bin'] = pd.qcut(originalAustralianData['Feature 1'], q=200)
-    # originalAustralianData.to_csv('emg.csv', index=False)
+    print(noOutlierAustralian.describe())
     print(noOutlierAustralian)
+    pca('australian.csv',numd)
 
-def process_adult(file):
+def process_adult(file, numd):
+    print("------------------------------------------------------------------------Processing Adult------------------------------------------------------------------------")
     data_file_name = file
     data_file_name = file
     processed_rows = []
@@ -185,12 +189,15 @@ def process_adult(file):
                                                                                  ' Yugoslavia':35, ' El-Salvador':36, ' Trinadad&Tobago':37, ' Peru':38, ' Hong':39, ' Holand-Netherlands':40})
     noOutlierAdult['income'] = noOutlierAdult['income'].replace({' <=50K':0, ' >50K':1})
     
+    noOutlierAdult = noOutlierAdult.drop_duplicates()       
     noOutlierAdult.to_csv('adult.csv', index=False)
     print(noOutlierAdult.describe())
     print(noOutlierAdult)
+    pca('adult.csv',numd)
+
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    # process_emg("emg.txt")
-    # process_australian('australian.txt')
-    process_adult("adult.data")
+    process_emg("emg.txt", 3)
+    process_australian('australian.txt', 3)
+    process_adult("adult.data", 3)
