@@ -4,51 +4,44 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler  # to standardize the features
 from sklearn.decomposition import PCA
 import seaborn as sns
-from scipy.fftpack import fft  
+from scipy.fftpack import rfft  
 import matplotlib.pyplot as plt
 import plotly.express as px
 
 def dft(file, num):
     data_file_name = file
     originalData = pd.read_csv(file)
-    n_dimensions = num
-    data_dft = fft(originalData,n=n_dimensions)
+
+    scalar = StandardScaler() 
+    scaled_data = pd.DataFrame(scalar.fit_transform(originalData))
+    data_dft = rfft(scaled_data, n=num)
     print(data_dft)
     with open('test.txt', 'w') as file:
         writer = csv.writer(file)
         writer.writerows(data_dft)
 
-
-
-def pca(file, num):
+def pca(file):
     data_file_name = file
     originalData = pd.read_csv(file)
 
-    pcnum = num
-    pc = []
-    for i in range(num):
-        pc.append('PC' + str(i+1))
-
     scalar = StandardScaler() 
     scaled_data = pd.DataFrame(scalar.fit_transform(originalData)) #scaling the data
-    pca = PCA(n_components = num)
+    pca = PCA()
     pca.fit(scaled_data)
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+    n_components = np.argmax(cumulative_variance >= 0.9) + 1
+    pca = PCA(n_components = n_components)
     data_pca = pca.fit_transform(scaled_data)
-    if data_file_name == 'adult.csv':
-        fig = px.scatter(data_pca, x=0, y=1, color=originalData['income'])
-        fig.show()
-    else:
-        fig = px.scatter(data_pca, x=0, y=1, color=originalData['Feature 1'])
-        fig.show()
+    pc = []
+    for i in range(n_components):
+        pc.append('PC' + str(i+1))
     data_pca = pd.DataFrame(data_pca,columns=pc)
+    print('Variance ratio: ')
+    print(pca.explained_variance_ratio_)
     print(data_pca)
+    return n_components
 
-    sns.heatmap(scaled_data.corr())
-    plt.show()
-    sns.heatmap(data_pca.corr())
-    plt.show()
-
-def process_emg(file, numd):
+def process_emg(file):
     print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
     data_file_name = file
     processed_rows = []
@@ -91,10 +84,10 @@ def process_emg(file, numd):
     noOutlierEmg.to_csv('emg.csv', index=False)
     print(noOutlierEmg.describe())
     print(noOutlierEmg)
-    pca('emg.csv', numd)
-    dft('emg.csv', numd)
+    num = pca('emg.csv')
+    dft('emg.csv', num)
 
-def process_australian(file, numd):
+def process_australian(file):
     print("------------------------------------------------------------------------Processing Australian----------------------------------------------------------")
     data_file_name = file
     processed_rows = []
@@ -137,9 +130,10 @@ def process_australian(file, numd):
 
     print(noOutlierAustralian.describe())
     print(noOutlierAustralian)
-    pca('australian.csv',numd)
+    num = pca('australian.csv')
+    dft('australian.csv', num)
 
-def process_adult(file, numd):
+def process_adult(file):
     print("------------------------------------------------------------------------Processing Adult------------------------------------------------------------------------")
     data_file_name = file
     data_file_name = file
@@ -193,11 +187,12 @@ def process_adult(file, numd):
     noOutlierAdult.to_csv('adult.csv', index=False)
     print(noOutlierAdult.describe())
     print(noOutlierAdult)
-    pca('adult.csv',numd)
+    num = pca('adult.csv')
+    dft('adult.csv',num)
 
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    process_emg("emg.txt", 7)
-    # process_australian('australian.txt', 3)
-    # process_adult("adult.data", 2)
+    process_emg("emg.txt")
+    process_australian('australian.txt')
+    process_adult("adult.data")
