@@ -20,26 +20,9 @@ def dft(file, num):
         writer = csv.writer(file)
         writer.writerows(data_dft)
 
-def pca(file):
-    data_file_name = file
-    originalData = pd.read_csv(file)
-
-    scalar = StandardScaler() 
-    scaled_data = pd.DataFrame(scalar.fit_transform(originalData)) #scaling the data
-    pca = PCA()
-    pca.fit(scaled_data)
-    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
-    n_components = np.argmax(cumulative_variance >= 0.9) + 1
-    pca = PCA(n_components = n_components)
-    data_pca = pca.fit_transform(scaled_data)
-    pc = []
-    for i in range(n_components):
-        pc.append('PC' + str(i+1))
-    data_pca = pd.DataFrame(data_pca,columns=pc)
-    print('Variance ratio: ')
-    print(pca.explained_variance_ratio_)
-    print(data_pca)
-    return n_components
+def dopca(preparedData, num):
+    
+    return num
 
 def process_emg(file):
     print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
@@ -84,8 +67,16 @@ def process_emg(file):
     noOutlierEmg.to_csv('emg.csv', index=False)
     print(noOutlierEmg.describe())
     print(noOutlierEmg)
-    num = pca('emg.csv')
-    dft('emg.csv', num)
+
+    # Calculate the cumulative variances
+    scalar = StandardScaler() 
+    scaled_data = pd.DataFrame(scalar.fit_transform(noOutlierEmg)) #scaling the data
+    pca = PCA()
+    pca.fit(scaled_data)
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+    n_components = np.argmax(cumulative_variance >= 0.9) + 1
+
+    dopca(noOutlierEmg, n_components)
 
 def process_australian(file):
     print("------------------------------------------------------------------------Processing Australian----------------------------------------------------------")
@@ -194,5 +185,5 @@ def process_adult(file):
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
     process_emg("emg.txt")
-    process_australian('australian.txt')
-    process_adult("adult.data")
+    # process_australian('australian.txt')
+    # process_adult("adult.data")
