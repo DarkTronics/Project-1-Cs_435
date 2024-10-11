@@ -20,9 +20,16 @@ def dft(file, num):
         writer = csv.writer(file)
         writer.writerows(data_dft)
 
-def dopca(preparedData, num):
-    
-    return num
+def pcaFunction(preparedData, num):
+    X_meaned = preparedData - np.mean(preparedData , axis = 0)
+    cov_mat = np.cov(X_meaned , rowvar = False)
+    eigen_values , eigen_vectors = np.linalg.eigh(cov_mat)
+    sorted_index = np.argsort(eigen_values)[::-1]
+    sorted_eigenvalue = eigen_values[sorted_index]
+    sorted_eigenvectors = eigen_vectors[:,sorted_index]
+    eigenvector_subset = sorted_eigenvectors[:,0:num]
+    X_reduced = np.dot(eigenvector_subset.transpose() , X_meaned.transpose() ).transpose()
+    return X_reduced
 
 def process_emg(file):
     print("------------------------------------------------------------------------Processing Emg----------------------------------------------------------")
@@ -68,15 +75,19 @@ def process_emg(file):
     print(noOutlierEmg.describe())
     print(noOutlierEmg)
 
-    # Calculate the cumulative variances
     scalar = StandardScaler() 
-    scaled_data = pd.DataFrame(scalar.fit_transform(noOutlierEmg)) #scaling the data
+    scaled_data = pd.DataFrame(scalar.fit_transform(noOutlierEmg)) # Scaling the data
     pca = PCA()
     pca.fit(scaled_data)
-    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_) # Calculate the cumulative variances
     n_components = np.argmax(cumulative_variance >= 0.9) + 1
+    pc = []
+    for i in range(n_components):
+        pc.append('PC' + str(i+1))
 
-    dopca(noOutlierEmg, n_components)
+    pcaEmg = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc)
+    pcaEmg.to_csv('emg_pca.csv', index=False)
+    print(pcaEmg)
 
 def process_australian(file):
     print("------------------------------------------------------------------------Processing Australian----------------------------------------------------------")
@@ -121,8 +132,20 @@ def process_australian(file):
 
     print(noOutlierAustralian.describe())
     print(noOutlierAustralian)
-    num = pca('australian.csv')
-    dft('australian.csv', num)
+
+    scalar = StandardScaler() 
+    scaled_data = pd.DataFrame(scalar.fit_transform(noOutlierAustralian)) # Scaling the data
+    pca = PCA()
+    pca.fit(scaled_data)
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_) # Calculate the cumulative variances
+    n_components = np.argmax(cumulative_variance >= 0.9) + 1
+    pc = []
+    for i in range(n_components):
+        pc.append('PC' + str(i+1))
+
+    pcaAustralian = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc)
+    pcaAustralian.to_csv('australian_pca.csv', index=False)
+    print(pcaAustralian)
 
 def process_adult(file):
     print("------------------------------------------------------------------------Processing Adult------------------------------------------------------------------------")
@@ -159,31 +182,37 @@ def process_adult(file):
     noOutlierAdult.drop(noOutlierAdult.tail(1).index,inplace=True)
 
     noOutlierAdult['workclass'] = noOutlierAdult['workclass'].replace({' Private': 0, ' Self-emp-not-inc': 1, ' Self-emp-inc': 2, ' Federal-gov': 3, ' Local-gov': 4, ' State-gov': 5, ' Without-pay': 6, ' Never-worked': 7})
-    noOutlierAdult['education'] = noOutlierAdult['education'].replace({' Bachelors': 0, ' Some-college': 1, ' Self-emp-inc': 2, ' 11th': 3, ' HS-grad': 4, ' Prof-school': 5, 
-                                                                       ' Assoc-acdm': 6, ' Assoc-voc': 7, ' 9th': 8, ' 7th-8th': 9, ' 12th':10, ' Masters':11, ' 1st-4th':12, ' 10th':13, ' Doctorate':14, ' 5th-6th':15, ' Preschool':16})
+    noOutlierAdult['education'] = noOutlierAdult['education'].replace({' Bachelors': 0, ' Some-college': 1, ' Self-emp-inc': 2, ' 11th': 3, ' HS-grad': 4, ' Prof-school': 5, ' Assoc-acdm': 6, ' Assoc-voc': 7, ' 9th': 8, ' 7th-8th': 9, ' 12th':10, ' Masters':11, ' 1st-4th':12, ' 10th':13, ' Doctorate':14, ' 5th-6th':15, ' Preschool':16})
     noOutlierAdult['marital-status'] = noOutlierAdult['marital-status'].replace({' Married-civ-spouse':0, ' Divorced':1, ' Never-married':2, ' Separated':3, ' Widowed': 4, ' Married-spouse-absent':5, ' Married-AF-spouse':6})
-    noOutlierAdult['occupation'] = noOutlierAdult['occupation'].replace({' Tech-support':0, ' Craft-repair':1, ' Other-service':2, ' Sales':3, ' Exec-managerial':4, ' Prof-specialty':5, 
-                                                                         ' Handlers-cleaners':6, ' Machine-op-inspct':7, ' Adm-clerical':8, ' Farming-fishing':9, ' Transport-moving':10, ' Priv-house-serv':11, ' Protective-serv':12, ' Armed-Forces':13})
+    noOutlierAdult['occupation'] = noOutlierAdult['occupation'].replace({' Tech-support':0, ' Craft-repair':1, ' Other-service':2, ' Sales':3, ' Exec-managerial':4, ' Prof-specialty':5, ' Handlers-cleaners':6, ' Machine-op-inspct':7, ' Adm-clerical':8, ' Farming-fishing':9, ' Transport-moving':10, ' Priv-house-serv':11, ' Protective-serv':12, ' Armed-Forces':13})
     noOutlierAdult['relationship'] = noOutlierAdult['relationship'].replace({' Wife':0, ' Own-child':1, ' Husband':2, ' Not-in-family':3, ' Other-relative':4, ' Unmarried':5})
     noOutlierAdult['race'] = noOutlierAdult['race'].replace({' White': 0, ' Asian-Pac-Islander':1, ' Amer-Indian-Eskimo':2, ' Other':3, ' Black':4})
     noOutlierAdult['sex'] = noOutlierAdult['sex'].replace({' Female': 0, ' Male': 1})
-    noOutlierAdult['native-country'] = noOutlierAdult['native-country'].replace({' United-States':0, ' Cambodia':1, ' England':2, ' Puerto-Rico':3, ' Canada':4, ' Germany':5, ' Outlying-US(Guam-USVI-etc)':6, ' India':7, 
-                                                                                 ' Japan':8, ' Greece':9, ' South':10, ' China':11, ' Cuba':12, ' Iran':13, ' Honduras':14, ' Philippines':15, ' Italy':16, ' Poland':17, 
-                                                                                 ' Jamaica':18, ' Vietnam':19, ' Mexico':20, ' Portugal':21, ' Ireland':22, ' France':23, ' Dominican-Republic':24, ' Laos':25, 
-                                                                                 ' Ecuador':26, ' Taiwan':27, ' Haiti':28, ' Columbia':29, ' Hungary':30, ' Guatemala':31, ' Nicaragua':32, ' Scotland':33, ' Thailand':34, 
-                                                                                 ' Yugoslavia':35, ' El-Salvador':36, ' Trinadad&Tobago':37, ' Peru':38, ' Hong':39, ' Holand-Netherlands':40})
+    noOutlierAdult['native-country'] = noOutlierAdult['native-country'].replace({' United-States':0, ' Cambodia':1, ' England':2, ' Puerto-Rico':3, ' Canada':4, ' Germany':5, ' Outlying-US(Guam-USVI-etc)':6, ' India':7, ' Japan':8, ' Greece':9, ' South':10, ' China':11, ' Cuba':12, ' Iran':13, ' Honduras':14, ' Philippines':15, ' Italy':16, ' Poland':17, ' Jamaica':18, ' Vietnam':19, ' Mexico':20, ' Portugal':21, ' Ireland':22, ' France':23, ' Dominican-Republic':24, ' Laos':25, ' Ecuador':26, ' Taiwan':27, ' Haiti':28, ' Columbia':29, ' Hungary':30, ' Guatemala':31, ' Nicaragua':32, ' Scotland':33, ' Thailand':34, ' Yugoslavia':35, ' El-Salvador':36, ' Trinadad&Tobago':37, ' Peru':38, ' Hong':39, ' Holand-Netherlands':40})
     noOutlierAdult['income'] = noOutlierAdult['income'].replace({' <=50K':0, ' >50K':1})
     
     noOutlierAdult = noOutlierAdult.drop_duplicates()       
     noOutlierAdult.to_csv('adult.csv', index=False)
     print(noOutlierAdult.describe())
     print(noOutlierAdult)
-    num = pca('adult.csv')
-    dft('adult.csv',num)
+
+    scalar = StandardScaler() 
+    scaled_data = pd.DataFrame(scalar.fit_transform(noOutlierAdult)) # Scaling the data
+    pca = PCA()
+    pca.fit(scaled_data)
+    cumulative_variance = np.cumsum(pca.explained_variance_ratio_) # Calculate the cumulative variances
+    n_components = np.argmax(cumulative_variance >= 0.9) + 1
+    pc = []
+    for i in range(n_components):
+        pc.append('PC' + str(i+1))
+
+    pcaAdult = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc)
+    pcaAdult.to_csv('adult_pca.csv', index=False)
+    print(pcaAdult)
 
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
     process_emg("emg.txt")
-    # process_australian('australian.txt')
-    # process_adult("adult.data")
+    process_australian('australian.txt')
+    process_adult("adult.data")
