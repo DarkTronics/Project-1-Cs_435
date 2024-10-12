@@ -1,4 +1,5 @@
 import csv
+import math
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler  # to standardize the features
@@ -8,20 +9,39 @@ from scipy.fftpack import rfft
 import matplotlib.pyplot as plt
 import plotly.express as px
 
-def dft(file, num):
-    data_file_name = file
-    originalData = pd.read_csv(file)
+def dct(scaledData, num, file):
+    matrix = scaledData.values
+    pi = 3.142857
+    dct = []
+    m = len(matrix)
+    n = len(matrix[0])
+    for i in range(m):
+        dct.append([None for _ in range(n)])
+ 
+    for i in range(m):
+        for j in range(n):
+            if (i == 0):
+                ci = 1 / (m ** 0.5)
+            else:
+                ci = (2 / m) ** 0.5
+            if (j == 0):
+                cj = 1 / (n ** 0.5)
+            else:
+                cj = (2 / n) ** 0.5
+            sum = 0
+            for k in range(m):
+                for l in range(n):
+                    dct1 = matrix[k][l] * math.cos((2 * k + 1) * i * pi / (
+                        2 * m)) * math.cos((2 * l + 1) * j * pi / (2 * n))
+                    sum = sum + dct1
+            dct[i][j] = ci * cj * sum
 
-    scalar = StandardScaler() 
-    scaled_data = pd.DataFrame(scalar.fit_transform(originalData))
-    data_dft = rfft(scaled_data, n=num)
-    print(data_dft)
-    with open('test.txt', 'w') as file:
-        writer = csv.writer(file)
-        writer.writerows(data_dft)
+    df = pd.DataFrame(matrix)
+    df = df.iloc[:,:num]
+    df.to_csv(file, index=False)
 
-def pcaFunction(preparedData, num):
-    X_meaned = preparedData - np.mean(preparedData , axis = 0)
+def pcaFunction(scaledData, num):
+    X_meaned = scaledData - np.mean(scaledData , axis = 0)
     cov_mat = np.cov(X_meaned , rowvar = False)
     eigen_values , eigen_vectors = np.linalg.eigh(cov_mat)
     sorted_index = np.argsort(eigen_values)[::-1]
@@ -85,9 +105,11 @@ def process_emg(file):
     for i in range(n_components):
         pc.append('PC' + str(i+1))
 
-    pcaEmg = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc)
+    pcaEmg = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc) # pca function
     pcaEmg.to_csv('emg_pca.csv', index=False)
     print(pcaEmg)
+
+    dct(scaled_data, n_components, 'emg_dct.csv')
 
 def process_australian(file):
     print("------------------------------------------------------------------------Processing Australian----------------------------------------------------------")
@@ -147,6 +169,8 @@ def process_australian(file):
     pcaAustralian.to_csv('australian_pca.csv', index=False)
     print(pcaAustralian)
 
+    dct(scaled_data, n_components, 'australian_dct.csv')
+
 def process_adult(file):
     print("------------------------------------------------------------------------Processing Adult------------------------------------------------------------------------")
     data_file_name = file
@@ -201,6 +225,7 @@ def process_adult(file):
     pca = PCA()
     pca.fit(scaled_data)
     cumulative_variance = np.cumsum(pca.explained_variance_ratio_) # Calculate the cumulative variances
+    print(cumulative_variance)
     n_components = np.argmax(cumulative_variance >= 0.9) + 1
     pc = []
     for i in range(n_components):
@@ -210,9 +235,10 @@ def process_adult(file):
     pcaAdult.to_csv('adult_pca.csv', index=False)
     print(pcaAdult)
 
+    dct(scaled_data, n_components, 'adult_dct.csv')
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
     process_emg("emg.txt")
     process_australian('australian.txt')
-    process_adult("adult.data")
+    # process_adult("adult.data")
