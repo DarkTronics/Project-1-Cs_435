@@ -1,5 +1,6 @@
 import csv
 import math
+from matplotlib import pyplot as plt
 import pandas as pd
 import random
 import numpy as np
@@ -43,6 +44,7 @@ def dct(scaledData, num, file):
     df = pd.DataFrame(matrix)
     df = df.iloc[:,:num]
     df.to_csv(file, index=False)
+    return df
 
 def pcaFunction(scaledData, num):
     X_meaned = scaledData - np.mean(scaledData , axis = 0)
@@ -175,9 +177,9 @@ def process_australian(file):
     pcaAustralian.to_csv('australian_pca.csv', index=False)
     print(pcaAustralian)
 
-    autoEncoder('australian_auto.csv', scaled_data,n_components)
+    autoAustralian = autoEncoder('australian_auto.csv', scaled_data,n_components)
 
-    dct(scaled_data, n_components, 'australian_dct.csv')
+    dctAustralian = dct(scaled_data, n_components, 'australian_dct.csv')
 
 def process_adult(file):
     print("------------------------------------------------------------------------Processing Adult------------------------------------------------------------------------")
@@ -259,9 +261,9 @@ def autoEncoder(file, data, num):
 
     # Implementation of the Autoencoder Model
     input = Input(shape=(df_features.shape[1],))  # Ensure this shape matches your data
-    enc = Dense(64)(input)
+    enc = Dense(15)(input)
     enc = LeakyReLU()(enc)
-    enc = Dense(32)(enc)
+    enc = Dense(14)(enc)
     enc = LeakyReLU()(enc)
 
     latent_space = Dense(num, activation="tanh")(enc)
@@ -280,9 +282,10 @@ def autoEncoder(file, data, num):
     test_au_features = encoder.predict(df_features_test)
     test_au_features_df = pd.DataFrame(test_au_features)
     test_au_features_df.to_csv(file, index=False)
+    return test_au_features_df
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    # process_emg("emg.txt")
+    process_emg("emg.txt")
     process_australian('australian.txt')
     process_adult("adult.data")
