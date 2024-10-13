@@ -1,13 +1,17 @@
 import csv
 import math
 import pandas as pd
+import random
 import numpy as np
 from sklearn.preprocessing import StandardScaler  # to standardize the features
 from sklearn.decomposition import PCA
 import seaborn as sns
 from scipy.fftpack import rfft  
-import matplotlib.pyplot as plt
-import plotly.express as px
+from sklearn.preprocessing import MinMaxScaler
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.layers import Input, Dense, LeakyReLU
+from tensorflow.keras.models import Model
 
 def dct(scaledData, num, file):
     matrix = scaledData.values
@@ -109,6 +113,8 @@ def process_emg(file):
     pcaEmg.to_csv('emg_pca.csv', index=False)
     print(pcaEmg)
 
+    autoEncoder('emg_auto.csv', scaled_data,n_components)
+
     dct(scaled_data, n_components, 'emg_dct.csv')
 
 def process_australian(file):
@@ -168,6 +174,8 @@ def process_australian(file):
     pcaAustralian = pd.DataFrame(pcaFunction(scaled_data, n_components) , columns = pc)
     pcaAustralian.to_csv('australian_pca.csv', index=False)
     print(pcaAustralian)
+
+    autoEncoder('australian_auto.csv', scaled_data,n_components)
 
     dct(scaled_data, n_components, 'australian_dct.csv')
 
@@ -235,10 +243,46 @@ def process_adult(file):
     pcaAdult.to_csv('adult_pca.csv', index=False)
     print(pcaAdult)
 
+    autoEncoder('adult_auto.csv', scaled_data,n_components)
+
     dct(scaled_data, n_components, 'adult_dct.csv')
+
+def autoEncoder(file, data, num):
+
+    # scaler = MinMaxScaler()
+    # df_features = scaler.fit_transform(df)
+
+    # # Normalize the test data
+    # df_features_test = scaler.transform()  # Adjust based on your needs
+    df_features = data
+    df_features_test = data
+
+    # Implementation of the Autoencoder Model
+    input = Input(shape=(df_features.shape[1],))  # Ensure this shape matches your data
+    enc = Dense(64)(input)
+    enc = LeakyReLU()(enc)
+    enc = Dense(32)(enc)
+    enc = LeakyReLU()(enc)
+
+    latent_space = Dense(num, activation="tanh")(enc)
+
+    dec = Dense(32)(latent_space)
+    dec = LeakyReLU()(dec)
+    dec = Dense(64)(dec)
+    dec = LeakyReLU()(dec)
+    dec = Dense(units=df_features.shape[1], activation="sigmoid")(dec)
+
+    autoencoder = Model(input, dec)
+    autoencoder.compile(optimizer="adam", metrics=["mse"], loss="mse")
+    autoencoder.fit(df_features, df_features, epochs=50, batch_size=32, validation_split=0.25)
+    encoder = Model(input, latent_space)
+
+    test_au_features = encoder.predict(df_features_test)
+    test_au_features_df = pd.DataFrame(test_au_features)
+    test_au_features_df.to_csv(file, index=False)
 
 if __name__=="__main__":
     pd.set_option('future.no_silent_downcasting', True)
-    process_emg("emg.txt")
+    # process_emg("emg.txt")
     process_australian('australian.txt')
-    # process_adult("adult.data")
+    process_adult("adult.data")
